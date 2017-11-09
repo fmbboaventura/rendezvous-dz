@@ -1,10 +1,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#include <time.h>
+#include <sys/time.h>
 #include <omp.h>
 
-clock_t startTime, finalTime;
+double startTime, finalTime;
+time_t timer1, timer2;
+char buffer1[25], buffer2[25];
+struct tm* tm_info;
 
 //-------------------Functions-------------------
 double vX(int t, double X, double gama, double vex, double vey, double A, double B, double E);
@@ -29,9 +32,16 @@ double brute_I(double zl0, double gama, double X, double vez);
 double x=0, y=0, z=0, xl0=0, yl0=0, zl0=0;
 int Alt= 220;
 double w = 398600.4418/sqrt((6378.0 + 220)*(6378.0 + 220)*(6378.0 + 220));
+
 //otimizacao ---------------------
 double ww;
 //--------------------------------
+
+double getRealTime(){
+    struct timeval tm;
+    gettimeofday(&tm, NULL);
+    return ((double)tm.tv_sec + (double)tm.tv_usec/1000000.0);
+}
 
 static int const N = 20;
 double nave = 0;
@@ -39,11 +49,16 @@ double nave = 0;
  * main
  */
 void main(int argc, char *argv[]) {
+	//Start time
+	time(&timer1);
+	tm_info = localtime(&timer1);
+	strftime(buffer1, 25, "%d/%m/%Y %H:%M:%S", tm_info);
+	startTime = getRealTime();
+
 	//otimizacao ----------------------
 	ww = w*w;
-
 	//---------------------------------
-	startTime = clock();
+
 	int Tmax = 86400;
 	int NPI = atoi(argv[1]); // numero de posicoes iniciais
 	FILE *arq, *out;
@@ -125,9 +140,12 @@ void main(int argc, char *argv[]) {
 			}
 		}
 	}
-	finalTime = clock();
-   	double excecutionTime = (finalTime-startTime)/CLOCKS_PER_SEC;
-	fprintf(out, "Tempo em segundos: %lf", excecutionTime);
+    time(&timer2);
+    tm_info = localtime(&timer2);
+    strftime(buffer2, 25, "%d/%m/%Y %H:%M:%S", tm_info);
+
+    finalTime = getRealTime();
+	fprintf(out, "Tempo em segundos: %lf", finalTime);
     fclose(out);
 }
 
