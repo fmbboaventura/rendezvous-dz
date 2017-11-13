@@ -13,4 +13,4 @@ $(EXE): $(OBJ)
 
 .PHONY: clean
 clean:
-	rm -f $(OBJ)
+	rm -f $(OBJ) $(EXE)
