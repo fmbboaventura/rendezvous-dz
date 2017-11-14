@@ -10,8 +10,11 @@ EXE  = main
 #all: $(OBJ)
 
 $(EXE): $(OBJ)
-	gcc -o $(EXE) $(OBJ) $(CFLAGS)
+	gcc -o $(EXE) $(OBJ)
 
-.PHONY: clean
+.PHONY: clean serial-gprof
 clean:
 	rm -f $(OBJ) $(EXE)
+
+serial-gprof: $(OBJ)
+	gcc -o $(EXE) $(OBJ) $(CFLAGS)
