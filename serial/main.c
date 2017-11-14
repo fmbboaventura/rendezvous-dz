@@ -30,7 +30,7 @@ int main(int argc, char *argv[]) {
     FILE *arq, *out;
     char url[] = "in.dat";
     arq = fopen(url, "r");
-    out = fopen("parallel-out.txt", "w");
+    out = fopen("serial-out.txt", "w");
     double var1;
 
     for(int np = 1; np <= NPI; np++) {
@@ -51,9 +51,11 @@ int main(int argc, char *argv[]) {
             for(int aux = -14; aux<=2; aux++){
                 double gama = pow(10, aux);
 
+                // O H não depende do X (Chi)
+                double H = brute_H (z, gama, vex);
+
                 for(int Xaux=1; Xaux<=100; Xaux++) {
                     double X = Xaux;
-                    double H = brute_H (z, gama, vex);
                     double I = brute_I (zl0, gama, X, vez);
                     double dz = 0;
 
