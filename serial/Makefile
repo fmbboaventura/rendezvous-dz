@@ -1,5 +1,6 @@
 SRC  = $(wildcard *.c)
 OBJ  = $(SRC:.c=.o)
+CFLAGS = -pg
 EXE  = main
 
 # Cria os Object Files
@@ -9,7 +10,7 @@ EXE  = main
 #all: $(OBJ)
 
 $(EXE): $(OBJ)
-	gcc -o $(EXE) $(OBJ)
+	gcc -o $(EXE) $(OBJ) $(CFLAGS)
 
 .PHONY: clean
 clean:
