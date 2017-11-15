@@ -9,5 +9,6 @@ openmp:
 
 clean:
 	cd serial && make clean && cd ..
+	cd openmp && make clean && cd ..
 
 .PHONY: serial serial-gprof openmp
