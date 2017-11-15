@@ -26,7 +26,6 @@ int main(int argc, char *argv[]) {
 	startTime = getRealTime();
 
     int NPI = atoi(argv[1]); // numero de posicoes iniciais
-    double velociade_final[15999]; // Vetor das posicoes finais pra cada linha
     FILE *arq, *out;
     char url[] = "in.dat";
     arq = fopen(url, "r");
@@ -85,7 +84,8 @@ double vZ(int t, double X, double gama,  double vez, double H, double I) {
     double wt = w*t;
 
     double resultJn = 0;
-    double result1 = (-H)*w*sin(wt)+I*w*cos(wt);
+    // Otimizando com a distribuitiva
+    double result1 = w*((-H)*sin(wt)+I*cos(wt));
     double result2 = 0;
 
     //otimizacao
@@ -94,14 +94,15 @@ double vZ(int t, double X, double gama,  double vez, double H, double I) {
 
     for (int n = 1; n <= N; n++) {
         //brute_J
-        resultJn = vez/(n*pow(X,n)*w)/(1+(n*n*gama_wpow));
+        resultJn = 1/(n*pow(X,n)*w)/(1+(n*n*gama_wpow));
         if (n%2 == 0) {
             resultJn = -resultJn;
         }
         //brute_J
 
-        result2 += resultJn*((-n)*gama*pow(M_E, -(n*gamat)));
+        result2 += resultJn*((-n)*pow(M_E, -(n*gamat)));
     }
 
-    return result1  - result2;
+    // tirando as constantes do somatorio
+    return result1  - vez*gama*result2;
 }
