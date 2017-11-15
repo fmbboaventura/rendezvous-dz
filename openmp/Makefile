@@ -1,6 +1,6 @@
 SRC  = $(wildcard *.c)
 OBJ  = $(SRC:.c=.o)
-EXE  = main2
+EXE  = main
 
 # Cria os Object Files
 %.o: %.c
