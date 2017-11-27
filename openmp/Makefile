@@ -4,7 +4,7 @@ EXE  = main
 
 # Cria os Object Files
 %.o: %.c
-	gcc -c $*.c -fopenmp
+	gcc -c -Wall $*.c -fopenmp
 
 #all: $(OBJ)
 

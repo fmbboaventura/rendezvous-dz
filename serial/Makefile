@@ -5,7 +5,7 @@ EXE  = main
 
 # Cria os Object Files
 %.o: %.c
-	gcc -c $*.c
+	gcc -c -Wall $*.c
 
 %.gprof.o: %.c
 	gcc -c $*.c -pg -o $*.gprof.o
