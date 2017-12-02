@@ -10,8 +10,6 @@
 
 #include "err_code.h"
 
-#define MAX_SOURCE_SIZE (0x100000)
-
 extern double wtime();       // returns time since some fixed past point (wtime.c)
 extern int output_device_info(cl_device_id );
 
@@ -323,6 +321,8 @@ int main() {
         printf("Error: Failed to read output array!\n%s\n", err_code(err));
         exit(1);
     }
+
+    rtime = wtime();
 
     // Execute the kernel over the entire range of our 1d input data set
     // letting the OpenCL runtime choose the work-group size
