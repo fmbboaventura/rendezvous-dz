@@ -328,7 +328,7 @@ int main() {
     //     if ((i+1)%20==0) printf("\n");//getchar();
     // }
 
-    for (size_t i = 0; i < count_I; i++) {
+    for (int i = 0; i < count_I; i++) {
         printf("h_I[%d] = %f\n", i, h_I[i]);
         if ((i+1)%20==0) printf("\n");
         getchar();
