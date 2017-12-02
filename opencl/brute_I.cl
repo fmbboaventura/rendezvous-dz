@@ -28,6 +28,6 @@ __kernel void brute_I(
        }
        I[i_X*count_ve*count_gama +
            i_ve*count_gama +
-           i_gama] = (vz0 - ve_i*log((X_i-1)/X_i))/(*w) + temp;
+           i_gama] = ((vz0 - ve_i*log((X_i+1)/X_i))/(*w)) + temp;
    }
 }
