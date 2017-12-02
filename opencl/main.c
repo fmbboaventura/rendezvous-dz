@@ -10,75 +10,32 @@
 
 #include "err_code.h"
 
+#define MAX_SOURCE_SIZE (0x100000)
+
 extern double wtime();       // returns time since some fixed past point (wtime.c)
 extern int output_device_info(cl_device_id );
 
-const char *JnKernelSource = "\n" \
-"__kernel void brute_Jn(                                                  \n" \
-"   __global float* X,                                                    \n" \
-"   __global float* ve,                                                   \n" \
-"   __global float* gama,                                                 \n" \
-"   __global float* w,                                                    \n" \
-"   __global float* jn,                                                   \n" \
-"   const unsigned int count_gama,                                        \n" \
-"   const unsigned int count_ve,                                          \n" \
-"   const unsigned int count_X                                            \n" \
-")                                                                        \n" \
-"{                                                                        \n" \
-"   int i_gama = get_global_id(2);                                        \n" \
-"   int i_ve = get_global_id(1);                                          \n" \
-"   int i_X = get_global_id(0);                                           \n" \
-"   int n;                                                                \n" \
-"   float temp;                                                           \n" \
-"   if(i_X < count_X && i_ve < count_ve && i_gama < count_gama){          \n" \
-"       for (n=1; n <= 20; n++){                                          \n" \
-"           temp = (pow(1,(float)(n+1)))/                                 \n" \
-"                  ((*w)*n*pow(X[i_X], (float)n))/                             \n" \
-"                  (1+(n*gama[i_gama]/(*w))*(n*gama[i_gama]/(*w)));       \n" \
-"           if (n%2==0) temp = -temp;                                     \n" \
-"           jn[i_X*count_ve*count_gama*20 +                               \n" \
-"               i_ve*count_gama*20 +                                      \n" \
-"               i_gama*20 + (n-1)] = ve[i_ve] * temp;                     \n" \
-"       }                                                                 \n" \
-"   }                                                                     \n" \
-"}                                                                        \n" \
-"\n";
+char* src_to_str(char* src) {
+    FILE *fp;
+    long lSize;
+    char *str;
 
-const char *IKernelSource = "\n" \
-"__kernel void brute_I(                                                   \n" \
-"   __global float* X,                                                    \n" \
-"   __global float* ve,                                                   \n" \
-"   __global float* gama,                                                 \n" \
-"   __global float* w,                                                    \n" \
-"   __global float* I,                                                    \n" \
-"   __global float* jn,                                                   \n" \
-"   const  float vz0,                                                     \n" \
-"   const unsigned int count_gama,                                        \n" \
-"   const unsigned int count_ve,                                          \n" \
-"   const unsigned int count_X                                            \n" \
-")                                                                        \n" \
-"{                                                                        \n" \
-"   int i_gama = get_global_id(2);                                        \n" \
-"   int i_ve = get_global_id(1);                                          \n" \
-"   int i_X = get_global_id(0);                                           \n" \
-"   int n;                                                                \n" \
-"   float temp;                                                           \n" \
-"   float gama_i = gama[i_gama];                                          \n" \
-"   float ve_i = ve[i_ve];                                                \n" \
-"   float X_i = X[i_X];                                                   \n" \
-"   if(i_X < count_X && i_ve < count_ve && i_gama < count_gama){          \n" \
-"       temp = 0;                                                         \n" \
-"       for (n=1; n <= 20; n++){                                          \n" \
-"           temp += jn[i_X*count_ve*count_gama*20 +                       \n" \
-"               i_ve*count_gama*20 +                                      \n" \
-"               i_gama*20 + (n-1)]/n;                                     \n" \
-"       }                                                                 \n" \
-"       I[i_X*count_ve*count_gama +                                       \n" \
-"           i_ve*count_gama +                                             \n" \
-"           i_gama] = (vz0 - ve_i*log((X_i-1)/X_i))/(*w) + temp;          \n" \
-"   }                                                                     \n" \
-"}                                                                        \n" \
-"\n";
+    fp = fopen ( src , "rb" );
+    if( !fp ) printf("Erro ao abrir o arquivo %s\n", src),exit(EXIT_FAILURE);
+
+    fseek( fp , 0L , SEEK_END);
+    lSize = ftell( fp );
+    rewind( fp );
+
+    str = calloc( 1, lSize+1 );
+    if( !str ) fclose(fp),printf("src_to_str: Erro para alocar a memoria\n"),exit(EXIT_FAILURE);
+
+    if( 1!=fread( str , lSize, 1 , fp) )
+        fclose(fp),free(str),printf("Erro ao abrir o arquivo %s\n", src),exit(1);
+
+    fclose(fp);
+    return str;
+}
 
 int main() {
     int          err;               // error code returned from OpenCL calls
@@ -94,6 +51,10 @@ int main() {
     float*       h_jn = (float*) calloc(count_jn, sizeof(float));
     float*       h_I = (float*) calloc(count_I, sizeof(float));
     float*       h_w = &w;
+
+    // Carregando o codigo fonte dos kernels
+    const char *IKernelSource = src_to_str("brute_I.cl");
+    const char *JnKernelSource = src_to_str("brute_jn.cl");
 
     int i = 0;
     for(float gama = pow(10,-14); gama<=100; gama = gama*10){
