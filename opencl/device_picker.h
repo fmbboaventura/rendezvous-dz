@@ -29,7 +29,7 @@ unsigned getDeviceList(cl_device_id devices[MAX_DEVICES])
   cl_uint numPlatforms = 0;
   cl_platform_id platforms[MAX_PLATFORMS];
   err = clGetPlatformIDs(MAX_PLATFORMS, platforms, &numPlatforms);
-  checkError(err, "getting platforms");
+  checkError(err, "recuperando plataformas");
 
   // Enumerate devices
   unsigned numDevices = 0;
@@ -38,7 +38,7 @@ unsigned getDeviceList(cl_device_id devices[MAX_DEVICES])
     cl_uint num = 0;
     err = clGetDeviceIDs(platforms[i], CL_DEVICE_TYPE_ALL,
                          MAX_DEVICES-numDevices, devices+numDevices, &num);
-    checkError(err, "getting deviceS");
+    checkError(err, "recuperando devices");
     numDevices += num;
   }
 
@@ -80,7 +80,7 @@ void parseArguments(int argc, char *argv[], cl_uint *deviceIndex)
       // Print device names
       if (numDevices == 0)
       {
-        printf("No devices found.\n");
+        printf("Nenhum device encontrado.\n");
       }
       else
       {
@@ -100,21 +100,20 @@ void parseArguments(int argc, char *argv[], cl_uint *deviceIndex)
     {
       if (++i >= argc || !parseUInt(argv[i], deviceIndex))
       {
-        printf("Invalid device index\n");
+        printf("Device index invalido\n");
         exit(1);
       }
     }
     else if (!strcmp(argv[i], "--help") || !strcmp(argv[i], "-h"))
     {
       printf("\n");
-      printf("Usage: ./program [OPTIONS]\n\n");
-      printf("Options:\n");
-      printf("  -h  --help               Print the message\n");
-      printf("      --list               List available devices\n");
-      printf("      --device     INDEX   Select device at INDEX\n");
+      printf("Uso: ./program [OPCOES]\n\n");
+      printf("Opoes:\n");
+      printf("  -h  --help               Printa a mensagem\n");
+      printf("      --list               Lista os devices disponiveis\n");
+      printf("      --device     INDEX   Seleciona device no INDEX\n");
       printf("\n");
       exit(0);
     }
   }
 }
-

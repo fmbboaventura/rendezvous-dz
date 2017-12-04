@@ -144,9 +144,9 @@ void check_error(cl_int err, const char *operation, char *filename, int line)
 {
     if (err != CL_SUCCESS)
     {
-        fprintf(stderr, "Error during operation '%s', ", operation);
-        fprintf(stderr, "in '%s' on line %d\n", filename, line);
-        fprintf(stderr, "Error code was \"%s\" (%d)\n", err_code(err), err);
+        fprintf(stderr, "Erro durante a operacao '%s', ", operation);
+        fprintf(stderr, "em '%s' na linha %d\n", filename, line);
+        fprintf(stderr, "O codigo de erro foi \"%s\" (%d)\n", err_code(err), err);
         exit(EXIT_FAILURE);
     }
 }
