@@ -45,6 +45,10 @@ int main(int argc, char *argv[]) {
     int       count_H = count_gama * count_ve;
     int       count_vz = 9 * count_gama * count_ve * 86400; // Serão calculados 132192000 valores de vz por chamada ao kernel
     float     w = 398600.4418/sqrt((6378.0 + 220)*(6378.0 + 220)*(6378.0 + 220));
+    float     z0;
+    float     vz0;
+    float     p_time = 0;
+    float     t_time = wtime();
     float*    h_gama = (float*) calloc(count_gama, sizeof(float));
     float*    h_ve = (float*) calloc(count_ve, sizeof(float));
     float*    h_jn = (float*) calloc(count_jn, sizeof(float));
@@ -52,8 +56,6 @@ int main(int argc, char *argv[]) {
     float*    h_H = (float*) calloc(count_H, sizeof(float));
     float*    h_vz = (float*) calloc(count_vz, sizeof(float));
     float*    h_w = &w;
-    float*    z0;
-    float*    vz0;
 
     int NPI = atoi(argv[1]); // numero de posicoes iniciais
     FILE *arq;
@@ -301,6 +303,7 @@ int main(int argc, char *argv[]) {
     checkError(err, "Esperando o termino do kernel");
 
     rtime = wtime() - rtime;
+    p_time += rtime;
     printf("\nO kernel brute_jn executou em %.20lf segundos\n",rtime);
 
     // Read back the results from the compute device
@@ -353,6 +356,7 @@ int main(int argc, char *argv[]) {
         checkError(err, "Esperando pelo termino do kernel");
 
         rtime = wtime() - rtime;
+        p_time += rtime;
         printf("\nLinha %d: O kernel brute_I executou em %.20lf segundos\n",np, rtime);
 
         // Read back the results from the compute device
@@ -376,6 +380,7 @@ int main(int argc, char *argv[]) {
         checkError(err, "Esperando pelo termino do kernel");
 
         rtime = wtime() - rtime;
+        p_time += rtime;
         printf("\nLinha %d: O kernel brute_H executou em %.20lf segundos\n",np, rtime);
 
         size_t vz_global[2] = {7776, count_X};
@@ -395,6 +400,7 @@ int main(int argc, char *argv[]) {
             checkError(err, "Esperando pelo termino do kernel");
 
             rtime = wtime() - rtime;
+            p_time += rtime;
             printf("\nLinha %d - Offset %d: O kernel vz executou em %.20lf segundos\n", np, offset, rtime);
 
             //Read back the results from the compute device
@@ -424,6 +430,7 @@ int main(int argc, char *argv[]) {
         checkError(err, "Esperando pelo termino do kernel");
 
         rtime = wtime() - rtime;
+        p_time += rtime;
         printf("\nLinha %d - Offset %d: O kernel vz executou em %.20lf segundos\n", np, offset, rtime);
 
         //Read back the results from the compute device
@@ -478,6 +485,10 @@ int main(int argc, char *argv[]) {
     clReleaseKernel(ko_I);
     clReleaseKernel(ko_H);
     clReleaseKernel(ko_vz);
+
+    t_time = wtime() - t_time;
+    printf("\nTempo total de execucao: %.20f\n", t_time);
+    printf("Tempo total de execucao dos kernels %.20f\n", p_time);
 
     return 0;
 }
