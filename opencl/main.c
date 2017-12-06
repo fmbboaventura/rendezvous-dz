@@ -10,7 +10,7 @@
 
 #include "err_code.h"
 
-extern double wtime();       // returns time since some fixed past point (wtime.c)
+extern double wtime();
 extern int output_device_info(cl_device_id );
 
 char* src_to_str(char* src) {
@@ -35,8 +35,8 @@ char* src_to_str(char* src) {
     return str;
 }
 
-int main() {
-    int       err;               // error code returned from OpenCL calls
+int main(int argc, char *argv[]) {
+    int       err;
     int       count_gama = 17;
     int       count_ve = 10;
     int       count_X = 100;
@@ -53,12 +53,25 @@ int main() {
     float*    h_H = (float*) calloc(count_H, sizeof(float));
     float*    h_vz = (float*) calloc(count_vz, sizeof(float));
     float*    h_w = &w;
+    float*    z0;
+    float*    vz0;
+
+    int NPI = atoi(argv[1]); // numero de posicoes iniciais
+    FILE *arq;
+    char url[] = "in.dat";
+    float var1;
+    arq = fopen(url, "r");
+
+    if(arq == NULL) {
+        printf("Erro, nao foi possivel abrir o arquivo\n");
+        exit(EXIT_FAILURE);
+    }
 
     // Carregando o codigo fonte dos kernels
     const char *HKernelSource = src_to_str("brute_H.cl");
     const char *IKernelSource = src_to_str("brute_I.cl");
     const char *JnKernelSource = src_to_str("brute_jn.cl");
-    const char *VzKernelSource = src_to_str("vz.cl");
+    const char *vzKernelSource = src_to_str("vz.cl");
 
     // Inicializa os vetores dos parametros tecnológicos
     int i = 0;
@@ -87,15 +100,15 @@ int main() {
     cl_command_queue jn_commands;
     cl_command_queue I_commands;
     cl_command_queue H_commands;
-    cl_command_queue Vz_commands;
+    cl_command_queue vz_commands;
     cl_program       jn_program;
     cl_program       I_program;
     cl_program       H_program;
-    cl_program       Vz_program;
+    cl_program       vz_program;
     cl_kernel        ko_jn;
     cl_kernel        ko_I;
     cl_kernel        ko_H;
-    cl_kernel        ko_Vz;
+    cl_kernel        ko_vz;
 
     cl_mem d_gama;
     cl_mem d_ve;
@@ -104,7 +117,7 @@ int main() {
     cl_mem d_jn;
     cl_mem d_I;
     cl_mem d_H;
-    cl_mem d_Vz;
+    cl_mem d_vz;
 
     cl_uint numPlatforms;
 
@@ -150,8 +163,8 @@ int main() {
     H_commands = clCreateCommandQueue(context, device_id, 0, &err);
     checkError(err, "Criando command queue para o calculo do H");
 
-    Vz_commands = clCreateCommandQueue(context, device_id, 0, &err);
-    checkError(err, "Criando command queue para o calculo do Vz");
+    vz_commands = clCreateCommandQueue(context, device_id, 0, &err);
+    checkError(err, "Criando command queue para o calculo do vz");
 
     // Criando os programas a partir do codigo fonte
     jn_program = clCreateProgramWithSource(context, 1, (const char **) & JnKernelSource, NULL, &err);
@@ -163,7 +176,7 @@ int main() {
     H_program = clCreateProgramWithSource(context, 1, (const char **) & HKernelSource, NULL, &err);
     checkError(err, "Criando programa do kernel brute_H");
 
-    Vz_program = clCreateProgramWithSource(context, 1, (const char **) & VzKernelSource, NULL, &err);
+    vz_program = clCreateProgramWithSource(context, 1, (const char **) & vzKernelSource, NULL, &err);
     checkError(err, "Criando programa do kernel vz");
 
     // Compilando os programas
@@ -203,14 +216,14 @@ int main() {
         return EXIT_FAILURE;
     }
 
-    err = clBuildProgram(Vz_program, 0, NULL, NULL, NULL, NULL);
+    err = clBuildProgram(vz_program, 0, NULL, NULL, NULL, NULL);
     if (err != CL_SUCCESS)
     {
         size_t len;
         char buffer[2048];
 
         printf("Erro: Falha ao compilar o prgrama do vz!\n%s\n", err_code(err));
-        clGetProgramBuildInfo(Vz_program, device_id, CL_PROGRAM_BUILD_LOG, sizeof(buffer), buffer, &len);
+        clGetProgramBuildInfo(vz_program, device_id, CL_PROGRAM_BUILD_LOG, sizeof(buffer), buffer, &len);
         printf("%s\n", buffer);
         return EXIT_FAILURE;
     }
@@ -225,7 +238,7 @@ int main() {
     ko_H = clCreateKernel(H_program, "brute_H", &err);
     checkError(err, "Criando kernel do brute_H");
 
-    ko_Vz = clCreateKernel(Vz_program, "vz", &err);
+    ko_vz = clCreateKernel(vz_program, "vz", &err);
     checkError(err, "Criando kernel do vz");
 
     // Criando os buffers de entrada e saida na memória do device
@@ -250,8 +263,8 @@ int main() {
     d_H = clCreateBuffer(context,  CL_MEM_READ_WRITE, sizeof(float) * count_H, NULL, &err);
     checkError(err, "Criando buffer d_H");
 
-    d_Vz = clCreateBuffer(context,  CL_MEM_READ_WRITE, sizeof(float) * count_vz, NULL, &err);
-    checkError(err, "Criando buffer d_Vz");
+    d_vz = clCreateBuffer(context,  CL_MEM_READ_WRITE, sizeof(float) * count_vz, NULL, &err);
+    checkError(err, "Criando buffer d_vz");
 
     // Escreve o vetor dos parametros tecnológicos e outras constantes na memoria do device
     err = clEnqueueWriteBuffer(jn_commands, d_X, CL_TRUE, 0, sizeof(float) * count_X, h_X, 0, NULL, NULL);
@@ -278,44 +291,19 @@ int main() {
     err |= clSetKernelArg(ko_jn, 7, sizeof(unsigned int), &count_X);
     checkError(err, "Definindo os argumentos para o kernel jn");
 
-    // Definindo os argumentos para o kernel I
-    err  = clSetKernelArg(ko_I, 0, sizeof(cl_mem), &d_X);
-    err |= clSetKernelArg(ko_I, 1, sizeof(cl_mem), &d_ve);
-    err |= clSetKernelArg(ko_I, 2, sizeof(cl_mem), &d_gama);
-    err |= clSetKernelArg(ko_I, 3, sizeof(cl_mem), &d_w);
-    err |= clSetKernelArg(ko_I, 4, sizeof(cl_mem), &d_I);
-    err |= clSetKernelArg(ko_I, 5, sizeof(cl_mem), &d_jn);
-    float vz0 = -0.000171;
-    err |= clSetKernelArg(ko_I, 6, sizeof(float), &vz0);
-    err |= clSetKernelArg(ko_I, 7, sizeof(unsigned int), &count_gama);
-    err |= clSetKernelArg(ko_I, 8, sizeof(unsigned int), &count_ve);
-    err |= clSetKernelArg(ko_I, 9, sizeof(unsigned int), &count_X);
-    checkError(err, "// Definindo os argumentos para o kernel I");
-
-    // Definindo os argumentos para o kernel H
-    err |= clSetKernelArg(ko_H, 0, sizeof(cl_mem), &d_ve);
-    err |= clSetKernelArg(ko_H, 1, sizeof(cl_mem), &d_gama);
-    err |= clSetKernelArg(ko_H, 2, sizeof(cl_mem), &d_w);
-    err |= clSetKernelArg(ko_H, 3, sizeof(cl_mem), &d_H);
-    float z0 = 0.104698;
-    err |= clSetKernelArg(ko_H, 4, sizeof(float), &z0);
-    err |= clSetKernelArg(ko_H, 5, sizeof(unsigned int), &count_gama);
-    err |= clSetKernelArg(ko_H, 6, sizeof(unsigned int), &count_ve);
-    checkError(err, "Definindo os argumentos para o kernel H");
-
     // Definindo os argumentos para o kernel vz
-    err  = clSetKernelArg(ko_Vz, 0, sizeof(cl_mem), &d_X);
-    err |= clSetKernelArg(ko_Vz, 1, sizeof(cl_mem), &d_ve);
-    err |= clSetKernelArg(ko_Vz, 2, sizeof(cl_mem), &d_gama);
-    err |= clSetKernelArg(ko_Vz, 3, sizeof(cl_mem), &d_w);
-    err |= clSetKernelArg(ko_Vz, 4, sizeof(cl_mem), &d_I);
-    err |= clSetKernelArg(ko_Vz, 5, sizeof(cl_mem), &d_jn);
-    err |= clSetKernelArg(ko_Vz, 6, sizeof(cl_mem), &d_H);
-    err |= clSetKernelArg(ko_Vz, 7, sizeof(cl_mem), &d_Vz);
+    err  = clSetKernelArg(ko_vz, 0, sizeof(cl_mem), &d_X);
+    err |= clSetKernelArg(ko_vz, 1, sizeof(cl_mem), &d_ve);
+    err |= clSetKernelArg(ko_vz, 2, sizeof(cl_mem), &d_gama);
+    err |= clSetKernelArg(ko_vz, 3, sizeof(cl_mem), &d_w);
+    err |= clSetKernelArg(ko_vz, 4, sizeof(cl_mem), &d_I);
+    err |= clSetKernelArg(ko_vz, 5, sizeof(cl_mem), &d_jn);
+    err |= clSetKernelArg(ko_vz, 6, sizeof(cl_mem), &d_H);
+    err |= clSetKernelArg(ko_vz, 7, sizeof(cl_mem), &d_vz);
 
-    err |= clSetKernelArg(ko_Vz, 8, sizeof(unsigned int), &count_gama);
-    err |= clSetKernelArg(ko_Vz, 9, sizeof(unsigned int), &count_ve);
-    err |= clSetKernelArg(ko_Vz, 10, sizeof(unsigned int), &count_X);
+    err |= clSetKernelArg(ko_vz, 8, sizeof(unsigned int), &count_gama);
+    err |= clSetKernelArg(ko_vz, 9, sizeof(unsigned int), &count_ve);
+    err |= clSetKernelArg(ko_vz, 10, sizeof(unsigned int), &count_X);
     checkError(err, "Definindo os argumentos para o kernel vz");
 
     double rtime = wtime();
@@ -340,61 +328,137 @@ int main() {
     //     exit(1);
     // }
 
-    // Para calcular o tempo de execução do brute_I
-    rtime = wtime();
+    for(int np = 1; np <= NPI; np++){
 
-    // Executa o kernel do brute_I
-    err = clEnqueueNDRangeKernel(I_commands, ko_I, 3, NULL, global, NULL, 0, NULL, NULL);
-    checkError(err, "Enfileirando kernel brute_I");
+        // Lê a posição e a velocidade inical do arquivo de entrada;
+        fscanf(arq,"%f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f\n",
+            &var1, &var1, &var1, &var1, &var1, &z0, &var1, &var1, &var1, &vz0, &var1, &var1, &var1, &var1, &var1,
+            &var1, &var1, &var1, &var1);
 
-    err = clFinish(I_commands);
-    checkError(err, "Esperando pelo termino do kernel");
+        // Definindo os argumentos para o kernel I
+        err  = clSetKernelArg(ko_I, 0, sizeof(cl_mem), &d_X);
+        err |= clSetKernelArg(ko_I, 1, sizeof(cl_mem), &d_ve);
+        err |= clSetKernelArg(ko_I, 2, sizeof(cl_mem), &d_gama);
+        err |= clSetKernelArg(ko_I, 3, sizeof(cl_mem), &d_w);
+        err |= clSetKernelArg(ko_I, 4, sizeof(cl_mem), &d_I);
+        err |= clSetKernelArg(ko_I, 5, sizeof(cl_mem), &d_jn);
+        //float vz0 = -0.000171;
+        err |= clSetKernelArg(ko_I, 6, sizeof(float), &vz0);
+        err |= clSetKernelArg(ko_I, 7, sizeof(unsigned int), &count_gama);
+        err |= clSetKernelArg(ko_I, 8, sizeof(unsigned int), &count_ve);
+        err |= clSetKernelArg(ko_I, 9, sizeof(unsigned int), &count_X);
+        checkError(err, "// Definindo os argumentos para o kernel I");
 
-    rtime = wtime() - rtime;
-    printf("\nO kernel brute_I executou em %.20lf segundos\n",rtime);
+        // Definindo os argumentos para o kernel H
+        err |= clSetKernelArg(ko_H, 0, sizeof(cl_mem), &d_ve);
+        err |= clSetKernelArg(ko_H, 1, sizeof(cl_mem), &d_gama);
+        err |= clSetKernelArg(ko_H, 2, sizeof(cl_mem), &d_w);
+        err |= clSetKernelArg(ko_H, 3, sizeof(cl_mem), &d_H);
+        //float z0 = 0.104698;
+        err |= clSetKernelArg(ko_H, 4, sizeof(float), &z0);
+        err |= clSetKernelArg(ko_H, 5, sizeof(unsigned int), &count_gama);
+        err |= clSetKernelArg(ko_H, 6, sizeof(unsigned int), &count_ve);
+        checkError(err, "Definindo os argumentos para o kernel H");
 
-    // Read back the results from the compute device
-    // err = clEnqueueReadBuffer( I_commands, d_I, CL_TRUE, 0, sizeof(float) * count_I, h_I, 0, NULL, NULL );
-    // if (err != CL_SUCCESS)
-    // {
-    //     printf("Error: Failed to read output array!\n%s\n", err_code(err));
-    //     exit(1);
-    // }
+        // Para calcular o tempo de execução do brute_I
+        rtime = wtime();
 
-    // para o calculo do tempo do brute_H
-    rtime = wtime();
+        // Executa o kernel do brute_I
+        err = clEnqueueNDRangeKernel(I_commands, ko_I, 3, NULL, global, NULL, 0, NULL, NULL);
+        checkError(err, "Enfileirando kernel brute_I");
 
-    // Executa o kernel brute_H
-    const size_t H_global[2] = {count_ve, count_gama};
-    err = clEnqueueNDRangeKernel(H_commands, ko_H, 2, NULL, H_global, NULL, 0, NULL, NULL);
-    checkError(err, "Enfileirando kernel brute_H");
+        err = clFinish(I_commands);
+        checkError(err, "Esperando pelo termino do kernel");
 
-    // Wait for the commands to complete before stopping the timer
-    err = clFinish(H_commands);
-    checkError(err, "Esperando pelo termino do kernel");
+        rtime = wtime() - rtime;
+        printf("\nLinha %d: O kernel brute_I executou em %.20lf segundos\n",np, rtime);
 
-    rtime = wtime() - rtime;
-    printf("\nO kernel brute_H executou em %.20lf segundos\n",rtime);
+        // Read back the results from the compute device
+        // err = clEnqueueReadBuffer( I_commands, d_I, CL_TRUE, 0, sizeof(float) * count_I, h_I, 0, NULL, NULL );
+        // if (err != CL_SUCCESS)
+        // {
+        //     printf("Error: Failed to read output array!\n%s\n", err_code(err));
+        //     exit(1);
+        // }
 
-    rtime = wtime();
-    const size_t Vz_global[2] = {7776, count_X};
-    err = clEnqueueNDRangeKernel(Vz_commands, ko_Vz, 2, NULL, Vz_global, NULL, 0, NULL, NULL);
-    checkError(err, "Enfileirando kernel vz");
+        // para o calculo do tempo do brute_H
+        rtime = wtime();
 
-    // Wait for the commands to complete before stopping the timer
-    err = clFinish(Vz_commands);
-    checkError(err, "Esperando pelo termino do kernel");
+        // Executa o kernel brute_H
+        const size_t H_global[2] = {count_ve, count_gama};
+        err = clEnqueueNDRangeKernel(H_commands, ko_H, 2, NULL, H_global, NULL, 0, NULL, NULL);
+        checkError(err, "Enfileirando kernel brute_H");
 
-    rtime = wtime() - rtime;
-    printf("\nO kernel vz executou em %.20lf segundos\n",rtime);
+        // Wait for the commands to complete before stopping the timer
+        err = clFinish(H_commands);
+        checkError(err, "Esperando pelo termino do kernel");
 
-    // Read back the results from the compute device
-    // err = clEnqueueReadBuffer( H_commands, d_H, CL_TRUE, 0, sizeof(float) * count_H, h_H, 0, NULL, NULL );
-    // if (err != CL_SUCCESS)
-    // {
-    //     printf("Error: Failed to read output array!\n%s\n", err_code(err));
-    //     exit(1);
-    // }
+        rtime = wtime() - rtime;
+        printf("\nLinha %d: O kernel brute_H executou em %.20lf segundos\n",np, rtime);
+
+        size_t vz_global[2] = {7776, count_X};
+        size_t vz_offset[2] = {0, 0};
+        char c;
+        int offset;
+
+        for (offset = 0; offset < 85536; offset += 7776) {
+            c = 0;
+            vz_offset[0] = offset;
+            rtime = wtime();
+            err = clEnqueueNDRangeKernel(vz_commands, ko_vz, 2, vz_offset, vz_global, NULL, 0, NULL, NULL);
+            checkError(err, "Enfileirando kernel vz");
+
+            // Wait for the commands to complete before stopping the timer
+            err = clFinish(vz_commands);
+            checkError(err, "Esperando pelo termino do kernel");
+
+            rtime = wtime() - rtime;
+            printf("\nLinha %d - Offset %d: O kernel vz executou em %.20lf segundos\n", np, offset, rtime);
+
+            //Read back the results from the compute device
+            err = clEnqueueReadBuffer( vz_commands, d_vz, CL_TRUE, 0, sizeof(float) * count_vz, h_vz, 0, NULL, NULL );
+            if (err != CL_SUCCESS)
+            {
+                printf("Error: Failed to read output array!\n%s\n", err_code(err));
+                exit(1);
+            }
+
+            // for (int i = 0; i < count_vz; i++) {
+            //         if (c != '1'){
+            //             printf("Offset: %d. h_vz[%d] = %f\n", offset, i, h_vz[i]);
+            //             c = getchar();
+            //         }//printf("\n");//getchar();
+            // }
+        }
+
+        // calcula vz para o resto do tempo
+        vz_global[0] = 846;
+        rtime = wtime();
+        err = clEnqueueNDRangeKernel(vz_commands, ko_vz, 2, vz_offset, vz_global, NULL, 0, NULL, NULL);
+        checkError(err, "Enfileirando kernel vz");
+
+        // Wait for the commands to complete before stopping the timer
+        err = clFinish(vz_commands);
+        checkError(err, "Esperando pelo termino do kernel");
+
+        rtime = wtime() - rtime;
+        printf("\nLinha %d - Offset %d: O kernel vz executou em %.20lf segundos\n", np, offset, rtime);
+
+        //Read back the results from the compute device
+        err = clEnqueueReadBuffer( vz_commands, d_vz, CL_TRUE, 0, sizeof(float) * count_vz, h_vz, 0, NULL, NULL );
+        if (err != CL_SUCCESS)
+        {
+            printf("Error: Failed to read output array!\n%s\n", err_code(err));
+            exit(1);
+        }
+
+        // for (int i = 0; i < 846; i++) {
+        //     if (c != '1'){
+        //         printf("Offset: %d. h_vz[%d] = %f\n", offset, i, h_vz[i]);
+        //         c = getchar();
+        //     }//printf("\n");//getchar();
+        // }
+    }
 
     // for (size_t i = 0; i < count_jn; i++) {
     //     printf("h_jn[%d] = %f\n", i, h_jn[i]);
@@ -412,6 +476,26 @@ int main() {
     //     if ((i+1)%20==0) printf("\n");
     //     getchar();
     // }
+    //
+    clReleaseMemObject(d_w);
+    clReleaseMemObject(d_gama);
+    clReleaseMemObject(d_ve);
+    clReleaseMemObject(d_jn);
+    clReleaseMemObject(d_H);
+    clReleaseMemObject(d_I);
+    clReleaseMemObject(d_vz);
+    clReleaseCommandQueue(jn_commands);
+    clReleaseCommandQueue(I_commands);
+    clReleaseCommandQueue(H_commands);
+    clReleaseCommandQueue(vz_commands);
+    clReleaseProgram(jn_program);
+    clReleaseProgram(I_program);
+    clReleaseProgram(H_program);
+    clReleaseProgram(vz_program);
+    clReleaseKernel(ko_jn);
+    clReleaseKernel(ko_I);
+    clReleaseKernel(ko_H);
+    clReleaseKernel(ko_vz);
 
     return 0;
 }
