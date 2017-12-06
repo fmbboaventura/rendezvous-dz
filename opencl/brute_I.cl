@@ -1,5 +1,4 @@
 __kernel void brute_I(
-   __global float* X,
    __global float* ve,
    __global float* gama,
    __global float* w,
@@ -18,7 +17,7 @@ __kernel void brute_I(
    float temp;
    float gama_i = gama[i_gama];
    float ve_i = ve[i_ve];
-   float X_i = X[i_X];
+   float X_i = i_X+1;
    if(i_X < count_X && i_ve < count_ve && i_gama < count_gama){
        temp = 0;
        for (n=1; n <= 20; n++){

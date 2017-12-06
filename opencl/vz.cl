@@ -1,5 +1,4 @@
 __kernel void vz(
-    __global float* X,
     __global float* ve,
     __global float* gama,
     __global float* w,

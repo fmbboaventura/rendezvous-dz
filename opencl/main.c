@@ -47,7 +47,6 @@ int main(int argc, char *argv[]) {
     float     w = 398600.4418/sqrt((6378.0 + 220)*(6378.0 + 220)*(6378.0 + 220));
     float*    h_gama = (float*) calloc(count_gama, sizeof(float));
     float*    h_ve = (float*) calloc(count_ve, sizeof(float));
-    float*    h_X = (float*) calloc(count_X, sizeof(float));
     float*    h_jn = (float*) calloc(count_jn, sizeof(float));
     float*    h_I = (float*) calloc(count_I, sizeof(float));
     float*    h_H = (float*) calloc(count_H, sizeof(float));
@@ -88,13 +87,6 @@ int main(int argc, char *argv[]) {
         i++;
     }
 
-    i = 0;
-    for (float j = 1; j <= 100; j++) {
-        h_X[i] = j;
-        printf("X%d: %f\n", i, h_X[i]);
-        i++;
-    }
-
     cl_device_id     device_id;
     cl_context       context;
     cl_command_queue jn_commands;
@@ -112,7 +104,6 @@ int main(int argc, char *argv[]) {
 
     cl_mem d_gama;
     cl_mem d_ve;
-    cl_mem d_X;
     cl_mem d_w;
     cl_mem d_jn;
     cl_mem d_I;
@@ -242,9 +233,6 @@ int main(int argc, char *argv[]) {
     checkError(err, "Criando kernel do vz");
 
     // Criando os buffers de entrada e saida na memória do device
-    d_X  = clCreateBuffer(context,  CL_MEM_READ_ONLY,  sizeof(float) * count_X, NULL, &err);
-    checkError(err, "Criando buffer d_X");
-
     d_ve  = clCreateBuffer(context,  CL_MEM_READ_ONLY,  sizeof(float) * count_ve, NULL, &err);
     checkError(err, "Criando buffer d_ve");
 
@@ -267,9 +255,6 @@ int main(int argc, char *argv[]) {
     checkError(err, "Criando buffer d_vz");
 
     // Escreve o vetor dos parametros tecnológicos e outras constantes na memoria do device
-    err = clEnqueueWriteBuffer(jn_commands, d_X, CL_TRUE, 0, sizeof(float) * count_X, h_X, 0, NULL, NULL);
-    checkError(err, "Copiando h_X para o device em d_X");
-
     err = clEnqueueWriteBuffer(jn_commands, d_ve, CL_TRUE, 0, sizeof(float) * count_ve, h_ve, 0, NULL, NULL);
     checkError(err, "Copiando h_ve para o device em d_ve");
 
@@ -280,30 +265,28 @@ int main(int argc, char *argv[]) {
     checkError(err, "Copiando h_jn para o device em d_jn");
 
     // Definindo os argumentos para o kernel jn
-    err  = clSetKernelArg(ko_jn, 0, sizeof(cl_mem), &d_X);
-    err |= clSetKernelArg(ko_jn, 1, sizeof(cl_mem), &d_ve);
-    err |= clSetKernelArg(ko_jn, 2, sizeof(cl_mem), &d_gama);
-    err |= clSetKernelArg(ko_jn, 3, sizeof(cl_mem), &d_w);
-    err |= clSetKernelArg(ko_jn, 4, sizeof(cl_mem), &d_jn);
+    err |= clSetKernelArg(ko_jn, 0, sizeof(cl_mem), &d_ve);
+    err |= clSetKernelArg(ko_jn, 1, sizeof(cl_mem), &d_gama);
+    err |= clSetKernelArg(ko_jn, 2, sizeof(cl_mem), &d_w);
+    err |= clSetKernelArg(ko_jn, 3, sizeof(cl_mem), &d_jn);
 
-    err |= clSetKernelArg(ko_jn, 5, sizeof(unsigned int), &count_gama);
-    err |= clSetKernelArg(ko_jn, 6, sizeof(unsigned int), &count_ve);
-    err |= clSetKernelArg(ko_jn, 7, sizeof(unsigned int), &count_X);
+    err |= clSetKernelArg(ko_jn, 4, sizeof(unsigned int), &count_gama);
+    err |= clSetKernelArg(ko_jn, 5, sizeof(unsigned int), &count_ve);
+    err |= clSetKernelArg(ko_jn, 6, sizeof(unsigned int), &count_X);
     checkError(err, "Definindo os argumentos para o kernel jn");
 
     // Definindo os argumentos para o kernel vz
-    err  = clSetKernelArg(ko_vz, 0, sizeof(cl_mem), &d_X);
-    err |= clSetKernelArg(ko_vz, 1, sizeof(cl_mem), &d_ve);
-    err |= clSetKernelArg(ko_vz, 2, sizeof(cl_mem), &d_gama);
-    err |= clSetKernelArg(ko_vz, 3, sizeof(cl_mem), &d_w);
-    err |= clSetKernelArg(ko_vz, 4, sizeof(cl_mem), &d_I);
-    err |= clSetKernelArg(ko_vz, 5, sizeof(cl_mem), &d_jn);
-    err |= clSetKernelArg(ko_vz, 6, sizeof(cl_mem), &d_H);
-    err |= clSetKernelArg(ko_vz, 7, sizeof(cl_mem), &d_vz);
+    err |= clSetKernelArg(ko_vz, 0, sizeof(cl_mem), &d_ve);
+    err |= clSetKernelArg(ko_vz, 1, sizeof(cl_mem), &d_gama);
+    err |= clSetKernelArg(ko_vz, 2, sizeof(cl_mem), &d_w);
+    err |= clSetKernelArg(ko_vz, 3, sizeof(cl_mem), &d_I);
+    err |= clSetKernelArg(ko_vz, 4, sizeof(cl_mem), &d_jn);
+    err |= clSetKernelArg(ko_vz, 5, sizeof(cl_mem), &d_H);
+    err |= clSetKernelArg(ko_vz, 6, sizeof(cl_mem), &d_vz);
 
-    err |= clSetKernelArg(ko_vz, 8, sizeof(unsigned int), &count_gama);
-    err |= clSetKernelArg(ko_vz, 9, sizeof(unsigned int), &count_ve);
-    err |= clSetKernelArg(ko_vz, 10, sizeof(unsigned int), &count_X);
+    err |= clSetKernelArg(ko_vz, 7, sizeof(unsigned int), &count_gama);
+    err |= clSetKernelArg(ko_vz, 8, sizeof(unsigned int), &count_ve);
+    err |= clSetKernelArg(ko_vz, 9, sizeof(unsigned int), &count_X);
     checkError(err, "Definindo os argumentos para o kernel vz");
 
     double rtime = wtime();
@@ -336,17 +319,16 @@ int main(int argc, char *argv[]) {
             &var1, &var1, &var1, &var1);
 
         // Definindo os argumentos para o kernel I
-        err  = clSetKernelArg(ko_I, 0, sizeof(cl_mem), &d_X);
-        err |= clSetKernelArg(ko_I, 1, sizeof(cl_mem), &d_ve);
-        err |= clSetKernelArg(ko_I, 2, sizeof(cl_mem), &d_gama);
-        err |= clSetKernelArg(ko_I, 3, sizeof(cl_mem), &d_w);
-        err |= clSetKernelArg(ko_I, 4, sizeof(cl_mem), &d_I);
-        err |= clSetKernelArg(ko_I, 5, sizeof(cl_mem), &d_jn);
+        err |= clSetKernelArg(ko_I, 0, sizeof(cl_mem), &d_ve);
+        err |= clSetKernelArg(ko_I, 1, sizeof(cl_mem), &d_gama);
+        err |= clSetKernelArg(ko_I, 2, sizeof(cl_mem), &d_w);
+        err |= clSetKernelArg(ko_I, 3, sizeof(cl_mem), &d_I);
+        err |= clSetKernelArg(ko_I, 4, sizeof(cl_mem), &d_jn);
         //float vz0 = -0.000171;
-        err |= clSetKernelArg(ko_I, 6, sizeof(float), &vz0);
-        err |= clSetKernelArg(ko_I, 7, sizeof(unsigned int), &count_gama);
-        err |= clSetKernelArg(ko_I, 8, sizeof(unsigned int), &count_ve);
-        err |= clSetKernelArg(ko_I, 9, sizeof(unsigned int), &count_X);
+        err |= clSetKernelArg(ko_I, 5, sizeof(float), &vz0);
+        err |= clSetKernelArg(ko_I, 6, sizeof(unsigned int), &count_gama);
+        err |= clSetKernelArg(ko_I, 7, sizeof(unsigned int), &count_ve);
+        err |= clSetKernelArg(ko_I, 8, sizeof(unsigned int), &count_X);
         checkError(err, "// Definindo os argumentos para o kernel I");
 
         // Definindo os argumentos para o kernel H
