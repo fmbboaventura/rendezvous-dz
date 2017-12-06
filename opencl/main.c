@@ -411,6 +411,7 @@ int main(int argc, char *argv[]) {
                 exit(1);
             }
 
+            // printf("Offset: %d. h_vz[%d] = %f\n", offset, 16999, h_vz[16999]);
             // for (int i = 0; i < count_vz; i++) {
             //         if (c != '1'){
             //             printf("Offset: %d. h_vz[%d] = %f\n", offset, i, h_vz[i]);
@@ -421,6 +422,7 @@ int main(int argc, char *argv[]) {
 
         // calcula vz para o resto do tempo
         vz_global[0] = 846;
+        vz_offset[0] = offset;
         rtime = wtime();
         err = clEnqueueNDRangeKernel(vz_commands, ko_vz, 2, vz_offset, vz_global, NULL, 0, NULL, NULL);
         checkError(err, "Enfileirando kernel vz");
@@ -437,10 +439,11 @@ int main(int argc, char *argv[]) {
         err = clEnqueueReadBuffer( vz_commands, d_vz, CL_TRUE, 0, sizeof(float) * count_vz, h_vz, 0, NULL, NULL );
         if (err != CL_SUCCESS)
         {
-            printf("Error: Failed to read output array!\n%s\n", err_code(err));
+            printf("Erro: falha ao ler o array de saida!\n%s\n", err_code(err));
             exit(1);
         }
 
+        //printf("Offset: %d. h_vz[%d] = %f\n", offset, (14382000-1), h_vz[(14382000-1)]);
         // for (int i = 0; i < 846; i++) {
         //     if (c != '1'){
         //         printf("Offset: %d. h_vz[%d] = %f\n", offset, i, h_vz[i]);
