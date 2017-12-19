@@ -29,6 +29,7 @@ int main(int argc, char* argv[]){
     char url[] = "in.dat";
     double var1;
 	double r_time;
+	double t_time = wtime();
 
 	arq = fopen(url, "r");
 	if(arq == NULL) {
@@ -87,20 +88,24 @@ int main(int argc, char* argv[]){
 
 	if (my_rank !=0){
 		/* cria mensagem */
-		sprintf(message, "Rank: %d\nTempo de Execucao: %f", my_rank, r_time);
+		sprintf(message, "Rank: %d\nTempo de Execucao (s): %f", my_rank, r_time);
 		dest = 0;
 
 		MPI_Send(message, strlen(message)+1, MPI_CHAR,
 		   dest, tag, MPI_COMM_WORLD);
 	}
 	else{
-		printf("Rank: %d\nTempo de Execucao: %f\n", my_rank, r_time);
+		printf("Rank: %d\nTempo de Execucao (s): %f\n", my_rank, r_time);
+		printf("Esperando os outros Hosts...\n\n", );
 		for (source = 1; source < p; source++) {
 			MPI_Recv(message, 100, MPI_CHAR, source, tag,
 			      MPI_COMM_WORLD, &status);
 			printf("%s\n",message);
 		}
 	}
+
+	t_time = wtime() - t_time;
+	printf("Tempo total (s): %f\n", t_time);
 
 	/* shut down MPI */
 	MPI_Finalize();
