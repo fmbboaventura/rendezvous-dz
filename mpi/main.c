@@ -18,6 +18,10 @@ int main(int argc, char* argv[]){
 	char message[100];        /* mensagem */
 	MPI_Status status ;
 
+	int base_X;
+	int fim_X;
+	double base_gama = pow(10,-14);
+	double vez;
 	int NPI = atoi(argv[1]); // numero de posicoes iniciais
 	FILE *arq;
     char url[] = "in.dat";
@@ -38,17 +42,39 @@ int main(int argc, char* argv[]){
 	/* pega o numero de processos */
 	MPI_Comm_size(MPI_COMM_WORLD, &p);
 
+	switch (my_rank) {
+		case 0: base_X = 1;  break;
+		case 1: base_X = 25; break;
+		case 0: base_X = 50; break;
+		case 0: base_X = 75; break;
+	}
+	fim_X = base_X + 25;
+
+	omp_set_num_threads(4);
+
 	for(int np = 1; np <= NPI; np++) {
 
 		fscanf(arq,"%lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf\n",
 			&var1, &var1, &var1, &x, &y, &z, &var1, &xl0, &yl0, &zl0, &var1, &var1, &var1, &var1, &var1,
 			&var1, &var1, &var1, &var1);
 
-		switch (my_rank) {
-			case 0: printf("Rank: %d z: %f dz: %f\n", my_rank, z, zl0);break;
-			case 0: printf("Rank: %d z: %f dz: %f\n", my_rank, z, zl0);break;
-			case 0: printf("Rank: %d z: %f dz: %f\n", my_rank, z, zl0);break;
-			case 0: printf("Rank: %d z: %f dz: %f\n", my_rank, z, zl0);break;
+		for(double Ve = 0.5; Ve<=5; Ve+=0.5) {
+			vez = Ve*Ve/3;
+
+			for(double gama = base_gama; gama<=100; gama = gama*10){
+				// O H não depende do X (Chi)
+                double H = brute_H (z, gama, vex);
+
+				for (int X = base_X; X <= fim_X; X++) {
+					double I = brute_I (zl0, gama, X, vez);
+                    double dz = 0;
+
+					#pragma omp parallel for
+					for(int t = 0; t <= Tmax; t++) {
+                        //dz = vZ(t, X, gama, vez, H, I);
+                    }
+				}
+			}
 		}
 	}
 
@@ -76,4 +102,32 @@ int main(int argc, char* argv[]){
 
 
 	return 0;
+}
+
+double vZ(int t, double X, double gama,  double vez, double H, double I) {
+    //otimizacao
+    double wt = w*t;
+
+    double resultJn = 0;
+    // Otimizando com a distribuitiva
+    double result1 = w*((-H)*sin(wt)+I*cos(wt));
+    double result2 = 0;
+
+    //otimizacao
+    double gama_wpow = (gama/w)*(gama/w);
+    double gamat = gama*t;
+
+    for (int n = 1; n <= N; n++) {
+        //brute_J
+        resultJn = 1/(n*pow(X,n)*w)/(1+(n*n*gama_wpow));
+        if (n%2 == 0) {
+            resultJn = -resultJn;
+        }
+        //brute_J
+
+        result2 += resultJn*((-n)*pow(M_E, -(n*gamat)));
+    }
+
+    // tirando as constantes do somatorio
+    return result1  - vez*gama*result2;
 }
