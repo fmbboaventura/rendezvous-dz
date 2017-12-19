@@ -96,7 +96,7 @@ int main(int argc, char* argv[]){
 	}
 	else{
 		printf("Rank: %d\nTempo de Execucao (s): %f\n", my_rank, r_time);
-		printf("Esperando os outros Hosts...\n\n", );
+		printf("Esperando os outros Hosts...\n\n");
 		for (source = 1; source < p; source++) {
 			MPI_Recv(message, 100, MPI_CHAR, source, tag,
 			      MPI_COMM_WORLD, &status);
