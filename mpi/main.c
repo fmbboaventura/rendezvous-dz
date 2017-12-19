@@ -3,6 +3,7 @@
 #include "const.h"
 #include <mpi.h>
 #include <omp.h>
+#include <string.h>
 
 extern double wtime();
 
@@ -86,14 +87,14 @@ int main(int argc, char* argv[]){
 
 	if (my_rank !=0){
 		/* cria mensagem */
-		sprintf(message, "Rank: %d\nTempo de Execucao:%f\n!", my_rank, r_time);
+		sprintf(message, "Rank: %d\nTempo de Execucao: %f", my_rank, r_time);
 		dest = 0;
 
 		MPI_Send(message, strlen(message)+1, MPI_CHAR,
 		   dest, tag, MPI_COMM_WORLD);
 	}
 	else{
-		printf("Rank: %d\nTempo de Execucao:%f\n!", my_rank, r_time);
+		printf("Rank: %d\nTempo de Execucao: %f\n", my_rank, r_time);
 		for (source = 1; source < p; source++) {
 			MPI_Recv(message, 100, MPI_CHAR, source, tag,
 			      MPI_COMM_WORLD, &status);

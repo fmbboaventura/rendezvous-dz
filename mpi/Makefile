@@ -5,12 +5,12 @@ CC   = mpicc
 
 # Cria os Object Files
 %.o: %.c
-	$(CC) -c -Wall -std=c99 $*.c -fopenmp
+	$(CC) -c -O3 -Wall -std=c99 $*.c -fopenmp
 
 #all: $(OBJ)
 
 $(EXE): $(OBJ)
-	$(CC) -o $(EXE) $(OBJ) -lm -fopenmp
+	$(CC) -o $(EXE) $(OBJ) -O3 -lm -fopenmp
 
 .PHONY: clean
 clean:
