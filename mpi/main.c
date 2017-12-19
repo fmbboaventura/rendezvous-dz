@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include "const.h"
 #include <mpi.h>
+#include <omp.h>
 
 extern double wtime();
 
@@ -45,8 +46,8 @@ int main(int argc, char* argv[]){
 	switch (my_rank) {
 		case 0: base_X = 1;  break;
 		case 1: base_X = 25; break;
-		case 0: base_X = 50; break;
-		case 0: base_X = 75; break;
+		case 2: base_X = 50; break;
+		case 3: base_X = 75; break;
 	}
 	fim_X = base_X + 25;
 
@@ -63,7 +64,7 @@ int main(int argc, char* argv[]){
 
 			for(double gama = base_gama; gama<=100; gama = gama*10){
 				// O H não depende do X (Chi)
-                double H = brute_H (z, gama, vex);
+                double H = brute_H (z, gama, vez);
 
 				for (int X = base_X; X <= fim_X; X++) {
 					double I = brute_I (zl0, gama, X, vez);
@@ -71,7 +72,7 @@ int main(int argc, char* argv[]){
 
 					#pragma omp parallel for
 					for(int t = 0; t <= Tmax; t++) {
-                        //dz = vZ(t, X, gama, vez, H, I);
+                        dz = vZ(t, X, gama, vez, H, I);
                     }
 				}
 			}
@@ -125,7 +126,7 @@ double vZ(int t, double X, double gama,  double vez, double H, double I) {
         }
         //brute_J
 
-        result2 += resultJn*((-n)*pow(M_E, -(n*gamat)));
+        result2 += resultJn*((-n)*exp(-(n*gamat)));
     }
 
     // tirando as constantes do somatorio
