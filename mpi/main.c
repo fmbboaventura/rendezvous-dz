@@ -102,10 +102,10 @@ int main(int argc, char* argv[]){
 			      MPI_COMM_WORLD, &status);
 			printf("%s\n",message);
 		}
+		t_time = wtime() - t_time;
+		printf("Tempo total (s): %f\n", t_time);
 	}
 
-	t_time = wtime() - t_time;
-	printf("Tempo total (s): %f\n", t_time);
 
 	/* shut down MPI */
 	MPI_Finalize();
