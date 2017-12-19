@@ -27,6 +27,7 @@ int main(int argc, char* argv[]){
 	FILE *arq;
     char url[] = "in.dat";
     double var1;
+	double r_time;
 
 	arq = fopen(url, "r");
 	if(arq == NULL) {
@@ -52,6 +53,8 @@ int main(int argc, char* argv[]){
 	fim_X = base_X + 25;
 
 	omp_set_num_threads(4);
+
+	r_time = wtime();
 
 	for(int np = 1; np <= NPI; np++) {
 
@@ -79,24 +82,24 @@ int main(int argc, char* argv[]){
 		}
 	}
 
-	// if (my_rank !=0){
-	// 	/* create message */
-	// 	sprintf(message, "Hello MPI World from process %d!", my_rank);
-	// 	dest = 0;
-	// 	/* use strlen+1 so that '\0' get transmitted */
-	// 	MPI_Send(message, strlen(message)+1, MPI_CHAR,
-	// 	   dest, tag, MPI_COMM_WORLD);
-    //     system("cat /proc/cpuinfo");
-	// }
-	// else{
-	// 	printf("Hello MPI World From process 0: Num processes: %d\n",p);
-	// 	for (source = 1; source < p; source++) {
-	// 		MPI_Recv(message, 100, MPI_CHAR, source, tag,
-	// 		      MPI_COMM_WORLD, &status);
-	// 		printf("%s\n",message);
-    //         system("cat /proc/cpuinfo");
-	// 	}
-	// }
+	r_time = wtime() - r_time;
+
+	if (my_rank !=0){
+		/* cria mensagem */
+		sprintf(message, "Rank: %d\nTempo de Execucao:%f\n!", my_rank, r_time);
+		dest = 0;
+
+		MPI_Send(message, strlen(message)+1, MPI_CHAR,
+		   dest, tag, MPI_COMM_WORLD);
+	}
+	else{
+		printf("Rank: %d\nTempo de Execucao:%f\n!", my_rank, r_time);
+		for (source = 1; source < p; source++) {
+			MPI_Recv(message, 100, MPI_CHAR, source, tag,
+			      MPI_COMM_WORLD, &status);
+			printf("%s\n",message);
+		}
+	}
 
 	/* shut down MPI */
 	MPI_Finalize();
