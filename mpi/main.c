@@ -98,6 +98,7 @@ int main(int argc, char* argv[]){
 	else{
 		printf("----------------------------\n");
 		printf("Numero de Linhas: %d\n", NPI);
+		printf("Numero de Processos: %d\n", p);
 		printf("Rank: %d\nTempo de Execucao (s): %f\n", my_rank, r_time);
 		printf("Esperando os outros Hosts...\n\n");
 		for (source = 1; source < p; source++) {
