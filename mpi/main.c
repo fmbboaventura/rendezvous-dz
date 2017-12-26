@@ -24,6 +24,8 @@ int main(int argc, char* argv[]){
 	int fim_X;
 	double base_gama = pow(10,-14);
 	double vez;
+	double H;
+	double I;
 	int NPI = atoi(argv[1]); // numero de posicoes iniciais
 	FILE *arq;
     char url[] = "in.dat";
@@ -48,11 +50,11 @@ int main(int argc, char* argv[]){
 
 	switch (my_rank) {
 		case 0: base_X = 1;  break;
-		case 1: base_X = 25; break;
-		case 2: base_X = 50; break;
-		case 3: base_X = 75; break;
+		case 1: base_X = 26; break;
+		case 2: base_X = 51; break;
+		case 3: base_X = 76; break;
 	}
-	fim_X = base_X + 25;
+	fim_X = base_X + 24;
 
 	omp_set_num_threads(4);
 
@@ -69,15 +71,14 @@ int main(int argc, char* argv[]){
 
 			for(double gama = base_gama; gama<=100; gama = gama*10){
 				// O H não depende do X (Chi)
-                double H = brute_H (z, gama, vez);
+                H = brute_H (z, gama, vez);
 
 				for (int X = base_X; X <= fim_X; X++) {
-					double I = brute_I (zl0, gama, X, vez);
-                    double dz = 0;
+					I = brute_I (zl0, gama, X, vez);
 
-					#pragma omp parallel for
+					#pragma omp parallel for firstprivate(X, gama, vez, H, I)
 					for(int t = 0; t <= Tmax; t++) {
-                        dz = vZ(t, X, gama, vez, H, I);
+                        double dz = vZ(t, X, gama, vez, H, I);
                     }
 				}
 			}
