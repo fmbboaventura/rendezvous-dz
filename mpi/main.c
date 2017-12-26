@@ -96,6 +96,8 @@ int main(int argc, char* argv[]){
 		   dest, tag, MPI_COMM_WORLD);
 	}
 	else{
+		printf("----------------------------\n");
+		printf("Numero de Linhas: %d\n", NPI);
 		printf("Rank: %d\nTempo de Execucao (s): %f\n", my_rank, r_time);
 		printf("Esperando os outros Hosts...\n\n");
 		for (source = 1; source < p; source++) {
@@ -105,6 +107,7 @@ int main(int argc, char* argv[]){
 		}
 		t_time = wtime() - t_time;
 		printf("Tempo total (s): %f\n", t_time);
+		printf("----------------------------\n");
 	}
 
 
