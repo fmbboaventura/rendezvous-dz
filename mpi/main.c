@@ -22,6 +22,7 @@ int main(int argc, char* argv[]){
 
 	int base_X;
 	int fim_X;
+	int incr;
 	double base_gama = pow(10,-14);
 	double vez;
 	double H;
@@ -48,13 +49,20 @@ int main(int argc, char* argv[]){
 	/* pega o numero de processos */
 	MPI_Comm_size(MPI_COMM_WORLD, &p);
 
-	switch (my_rank) {
-		case 0: base_X = 1;  break;
-		case 1: base_X = 26; break;
-		case 2: base_X = 51; break;
-		case 3: base_X = 76; break;
+	switch (p) {
+       case 1: incr = 100; break;
+       case 2: incr = 50;  break;
+       case 3: incr = 33;  break;
+       case 4: incr = 25;  break;
+   }
+
+   switch (my_rank) {
+		case 0: base_X = 1;              break;
+		case 1: base_X = 1 + incr;       break;
+		case 2: base_X = 1 + (incr * 2); break;
+		case 3: base_X = 1 + (incr * 3); break;
 	}
-	fim_X = base_X + 24;
+	fim_X = base_X + ((p == 3 && my_rank == 2)? incr: incr - 1);
 
 	omp_set_num_threads(4);
 
